@@ -9,18 +9,29 @@ export interface ProviderSignal {
   provider: string;
   verdict: ProviderVerdict;
   confidence: ProviderConfidence;
+  trustLevel: TrustLevel;
   status: ProviderExecutionStatus;
+}
+
+export interface ProviderTrustConfig {
+  [providerName: string]: TrustLevel;
+}
+
+export interface ScoringConfig {
+  providerTrust: ProviderTrustConfig;
+  defaultTrustLevel: TrustLevel;
 }
 
 export interface ScoringInput {
   providers: ProviderExecutionResult<NormalizedProviderResponse>[];
+  config?: ScoringConfig;
 }
 
 export interface NormalizedProviderResponse {
   provider_name: string;
   verdict: ProviderVerdict;
+  confidence: ProviderConfidence;
   score?: number;
-  confidence?: number;
   summary?: string;
   tags?: string[];
 }
@@ -28,7 +39,6 @@ export interface NormalizedProviderResponse {
 export interface ScoringResult {
   finalScore: number | null;
   verdict: FinalVerdict;
-  confidence: "high" | "medium" | "low";
   processedProviders: ProcessedProvider[];
   meta: {
     totalProviders: number;
@@ -47,6 +57,7 @@ export interface ProcessedProvider {
   effectiveWeight: number | null;
   verdict: ProviderVerdict | null;
   confidence: ProviderConfidence | null;
+  trustLevel: TrustLevel | null;
 }
 
 const VERDICT_SCORES: Record<ProviderVerdict, number> = {
@@ -74,19 +85,13 @@ const VERDICT_THRESHOLDS = {
   malicious: { min: 70, max: 100 },
 } as const;
 
-const DEFAULT_TRUST_LEVEL: TrustLevel = "medium";
+const DEFAULT_CONFIG: ScoringConfig = {
+  providerTrust: {},
+  defaultTrustLevel: "medium",
+};
 
-function mapConfidenceToLevel(confidence: number | undefined): ProviderConfidence {
-  if (confidence === undefined || confidence === null) {
-    return "medium";
-  }
-  if (confidence >= 70) return "high";
-  if (confidence >= 40) return "medium";
-  return "low";
-}
-
-function getProviderTrustLevel(_providerName: string): TrustLevel {
-  return DEFAULT_TRUST_LEVEL;
+function getProviderTrustLevel(providerName: string, config: ScoringConfig): TrustLevel {
+  return config.providerTrust[providerName] ?? config.defaultTrustLevel;
 }
 
 function normalizeVerdictToScore(verdict: ProviderVerdict): number {
@@ -102,14 +107,18 @@ function calculateEffectiveWeight(
   return trustWeight * confidenceMultiplier;
 }
 
-function mapScoreToVerdict(score: number): FinalVerdict {
+function mapScoreToVerdict(score: number, hasConflictingSignals: boolean): FinalVerdict {
+  if (hasConflictingSignals && score >= VERDICT_THRESHOLDS.suspicious.min && score <= VERDICT_THRESHOLDS.suspicious.max) {
+    return "suspicious";
+  }
   if (score >= VERDICT_THRESHOLDS.malicious.min) return "malicious";
   if (score >= VERDICT_THRESHOLDS.suspicious.min) return "suspicious";
   return "benign";
 }
 
 function extractProviderSignal(
-  result: ProviderExecutionResult<NormalizedProviderResponse>
+  result: ProviderExecutionResult<NormalizedProviderResponse>,
+  config: ScoringConfig
 ): ProviderSignal | null {
   if (result.status !== "success" || !result.data) {
     return null;
@@ -117,18 +126,20 @@ function extractProviderSignal(
 
   const data = result.data;
   const verdict: ProviderVerdict = data.verdict ?? "unknown";
-  const confidence = mapConfidenceToLevel(data.confidence);
+  const confidence: ProviderConfidence = data.confidence ?? "medium";
+  const trustLevel = getProviderTrustLevel(result.provider, config);
 
   return {
     provider: result.provider,
     verdict,
     confidence,
+    trustLevel,
     status: result.status,
   };
 }
 
 export function computeScore(input: ScoringInput): ScoringResult {
-  const { providers } = input;
+  const { providers, config = DEFAULT_CONFIG } = input;
 
   const totalProviders = providers.length;
   let successfulProviders = 0;
@@ -147,12 +158,11 @@ export function computeScore(input: ScoringInput): ScoringResult {
       failedProviders++;
     }
 
-    const signal = extractProviderSignal(result);
+    const signal = extractProviderSignal(result, config);
 
     if (signal) {
-      const trustLevel = getProviderTrustLevel(signal.provider);
       const normalizedScore = normalizeVerdictToScore(signal.verdict);
-      const effectiveWeight = calculateEffectiveWeight(trustLevel, signal.confidence);
+      const effectiveWeight = calculateEffectiveWeight(signal.trustLevel, signal.confidence);
 
       validSignals.push({ normalizedScore, effectiveWeight });
 
@@ -163,6 +173,7 @@ export function computeScore(input: ScoringInput): ScoringResult {
         effectiveWeight,
         verdict: signal.verdict,
         confidence: signal.confidence,
+        trustLevel: signal.trustLevel,
       });
     } else {
       processedProviders.push({
@@ -172,6 +183,7 @@ export function computeScore(input: ScoringInput): ScoringResult {
         effectiveWeight: null,
         verdict: null,
         confidence: null,
+        trustLevel: null,
       });
     }
   }
@@ -180,7 +192,6 @@ export function computeScore(input: ScoringInput): ScoringResult {
     return {
       finalScore: null,
       verdict: "unknown",
-      confidence: "low",
       processedProviders,
       meta: {
         totalProviders,
@@ -195,42 +206,42 @@ export function computeScore(input: ScoringInput): ScoringResult {
 
   const singleProviderMode = validSignals.length === 1;
 
+  const sumWeights = validSignals.reduce((sum, s) => sum + s.effectiveWeight, 0);
+
+  if (sumWeights === 0) {
+    return {
+      finalScore: null,
+      verdict: "unknown",
+      processedProviders,
+      meta: {
+        totalProviders,
+        successfulProviders,
+        failedProviders,
+        timedOutProviders,
+        singleProviderMode,
+        hasConflictingSignals: false,
+      },
+    };
+  }
+
   const sumWeightedScores = validSignals.reduce(
     (sum, s) => sum + s.normalizedScore * s.effectiveWeight,
     0
   );
-  const sumWeights = validSignals.reduce(
-    (sum, s) => sum + s.effectiveWeight,
-    0
-  );
 
-  const finalScore = sumWeights > 0 
-    ? Math.round(sumWeightedScores / sumWeights) 
-    : 0;
-
+  const finalScore = Math.round(sumWeightedScores / sumWeights);
   const clampedScore = Math.max(0, Math.min(100, finalScore));
-  let verdict = mapScoreToVerdict(clampedScore);
 
   const scores = validSignals.map(s => s.normalizedScore);
   const hasHighThreat = scores.some(s => s >= 70);
   const hasLowThreat = scores.some(s => s <= 29);
   const hasConflictingSignals = hasHighThreat && hasLowThreat;
 
-  if (hasConflictingSignals) {
-    verdict = "suspicious";
-  }
-
-  let resultConfidence: "high" | "medium" | "low" = "high";
-  if (singleProviderMode) {
-    resultConfidence = "low";
-  } else if (validSignals.length === 2 || hasConflictingSignals) {
-    resultConfidence = "medium";
-  }
+  const verdict = mapScoreToVerdict(clampedScore, hasConflictingSignals);
 
   return {
     finalScore: clampedScore,
     verdict,
-    confidence: resultConfidence,
     processedProviders,
     meta: {
       totalProviders,
