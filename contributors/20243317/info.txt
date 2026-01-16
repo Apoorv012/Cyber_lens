@@ -1,0 +1,4 @@
+Name: Vibhu Tomer
+GitHub Username: vibhutomer
+Hobbies: AI/ML, OS Development, Flutter, Firebase, Node.js, Competitive Programming (C++), Fitness, Gym, Badminton.
+Write some thing that you expect from this event: I expect to learn more about open source contribution, collaborate on impactful projects, and improve my development skills.
