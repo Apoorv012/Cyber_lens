@@ -115,7 +115,7 @@ export default function History() {
                 </div>
                 <span
                   className={`px-2 py-0.5 text-xs font-medium ring-1 ${badgeClass(
-                    row.verdict
+                    row.verdict!
                   )}`}
                 >
                   {row.verdict || "Unknown"}
@@ -168,7 +168,7 @@ export default function History() {
                     <td className="border border-neutral-800 px-4 py-3">
                       <span
                         className={`inline-flex items-center gap-2 px-2.5 py-1 text-xs font-medium ring-1 ${badgeClass(
-                          row.verdict
+                          row.verdict!
                         )}`}
                       >
                         <span
