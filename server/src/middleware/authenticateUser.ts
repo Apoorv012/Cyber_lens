@@ -32,3 +32,25 @@ export function authenticateUser(
     res.status(401).json({ error: "Unauthorized" });
   }
 }
+
+export function authenticateUserOptional(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void {
+  const token = getBearerToken(req);
+
+  if (!token) {
+    next();
+    return;
+  }
+
+  try {
+    const { userId } = verifyAccessToken(token);
+    req.user = { id: userId };
+  } catch {
+    // Ignore invalid tokens to preserve anonymous flows
+  }
+
+  next();
+}

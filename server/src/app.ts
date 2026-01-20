@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import resolveOwner from "./utils/resolveOwner";
+import { authenticateUserOptional } from "./middleware/authenticateUser";
+import resolveRuntimeOwner from "./middleware/resolveRuntimeOwner";
 import newsRouter from "./routes/news";
 import lookupRouter from "./routes/lookup";
 import historyRouter from "./routes/history";
@@ -21,12 +23,27 @@ app.use(
     origin: corsOrigin,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "X-Client-ID"],
-  })
+    allowedHeaders: ["Content-Type", "X-Client-ID", "Authorization"],
+  }),
 );
 
 app.use("/news", newsRouter);
 app.use(resolveOwner);
+app.use(authenticateUserOptional);
+app.use(resolveRuntimeOwner);
+// app.use((req, _res, next) => {
+//   const owner = req.owner;
+
+//   if (owner?.type === "user") {
+//     console.info(`[owner] user ${owner.id}`);
+//   } else if (owner?.type === "anonymous") {
+//     console.info(`[owner] anonymous ${owner.id}`);
+//   } else {
+//     console.info("[owner] unresolved");
+//   }
+
+//   next();
+// });
 
 app.get("/", (_req, res) => {
   res.json({ status: "ok" });
