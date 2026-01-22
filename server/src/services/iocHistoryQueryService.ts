@@ -5,6 +5,7 @@ export interface HistoryQueryParams {
   ownerId: string;
   limit: number;
   offset: number;
+  search?: string;
 }
 
 export async function queryHistory({
@@ -12,7 +13,29 @@ export async function queryHistory({
   ownerId,
   limit,
   offset,
+  search,
 }: HistoryQueryParams) {
+  const params: Array<string | number> = [ownerType, ownerId];
+  let searchClause = "";
+
+  if (search) {
+    params.push(`%${search}%`);
+    const searchIndex = params.length;
+    searchClause =
+      "AND (ioc_value ILIKE $" +
+      searchIndex +
+      " OR ioc_type ILIKE $" +
+      searchIndex +
+      " OR verdict ILIKE $" +
+      searchIndex +
+      ")";
+  }
+
+  params.push(limit, offset);
+
+  const limitIndex = search ? params.length - 1 : 3;
+  const offsetIndex = search ? params.length : 4;
+
   const { rows } = await pool.query(
     `
     SELECT
@@ -24,12 +47,12 @@ export async function queryHistory({
     FROM ioc_history
     WHERE owner_type = $1
       AND owner_id = $2
+      ${searchClause}
     ORDER BY created_at DESC
-    LIMIT $3 OFFSET $4
+    LIMIT $${limitIndex} OFFSET $${offsetIndex}
     `,
-    [ownerType, ownerId, limit, offset]
+    params,
   );
 
   return rows;
 }
-
