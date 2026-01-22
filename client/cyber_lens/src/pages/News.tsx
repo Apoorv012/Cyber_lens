@@ -6,6 +6,7 @@ type NewsItem = {
   summary: string;
   source: string;
   published_at: string;
+  id: string;
 };
 
 type PaginatedResponse<T> = {
@@ -18,7 +19,7 @@ export default function News() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [query, setQuery] = useState("");
-  const [_, setLoading] = useState(false);
+  // const [_, setLoading] = useState(false);
 
   const [rows, setRows] = useState<NewsItem[]>([]);
 
@@ -37,9 +38,10 @@ export default function News() {
         setRows(mapped);
       } catch (err) {
         console.error(err);
-      } finally {
-        setLoading(false);
       }
+      // finally {
+      //   setLoading(false);
+      // }
     }
     fetchNews();
   }, []);
@@ -128,9 +130,12 @@ export default function News() {
                 </p>
 
                 {/* Action */}
-                <div className="mt-auto pt-4 text-sm font-medium text-cyan-400 hover:underline cursor-pointer">
+                <a
+                  href={`/news/${item.id}`}
+                  className="mt-auto pt-4 text-sm font-medium text-cyan-400 hover:underline cursor-pointer block"
+                >
                   View details →
-                </div>
+                </a>
               </div>
             </article>
           ))}
