@@ -1,0 +1,8 @@
+Proposal: Automatically label entries with severity (High/Medium/Low) based on threat type.
+Reason: Helps users quickly identify critical threats without manual inspection.
+Impact: Medium → Large
+
+
+Proposal: Add advanced search filters (by date, type, severity, source) in History & Analytics pages.
+Reason: Improves usability; users can quickly find relevant events.
+Impact: Medium

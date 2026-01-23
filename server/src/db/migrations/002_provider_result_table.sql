@@ -1,6 +1,6 @@
 -- migration to create provider_result table
 
-CREATE TABLE provider_result (
+CREATE TABLE IF NOT EXISTS provider_result (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   query_id UUID NOT NULL REFERENCES ioc_query(id) ON DELETE CASCADE,
@@ -13,6 +13,6 @@ CREATE TABLE provider_result (
 );
 
 
-CREATE INDEX idx_provider_result_query_id ON provider_result(query_id);
-CREATE INDEX idx_provider_result_provider_name ON provider_result(provider_name);
-CREATE INDEX idx_provider_result_created_at ON provider_result(created_at);
+CREATE INDEX IF NOT EXISTS idx_provider_result_query_id ON provider_result(query_id);
+CREATE INDEX IF NOT EXISTS idx_provider_result_provider_name ON provider_result(provider_name);
+CREATE INDEX IF NOT EXISTS idx_provider_result_created_at ON provider_result(created_at);

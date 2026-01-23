@@ -4,8 +4,10 @@ import {
   Route,
   Outlet,
 } from "react-router-dom";
+
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+
 import Home from "./pages/Home";
 import History from "./pages/History";
 import News from "./pages/News";
@@ -13,6 +15,11 @@ import Login from "../../../contributors/MK-codes365/pages/Login";
 import Signup from "../../../contributors/MK-codes365/pages/Signup";
 import VerifyEmail from "../../../contributors/MK-codes365/pages/VerifyEmail";
 import Analytics from "./pages/Analytics";
+import NewsDetail from "./pages/NewsDetail";
+
+// import Login from "./pages/Login";
+// import Signup from "./pages/Signup";
+// import VerifyEmail from "./pages/VerifyEmail";
 
 const Layout = () => {
   return (
@@ -34,11 +41,18 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/history" element={<History />} />
           <Route path="/news" element={<News />} />
+          <Route path="/news/:id" element={<NewsDetail />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/analytics" element={<Analytics />} />
         </Route>
+
+        {/*
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        */}
       </Routes>
     </Router>
   );

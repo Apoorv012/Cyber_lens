@@ -1,6 +1,6 @@
 -- migration to create ioc_query table
 
-CREATE TABLE ioc_query (
+CREATE TABLE IF NOT EXISTS ioc_query (
   -- Primary key with uuid
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
@@ -15,6 +15,6 @@ CREATE TABLE ioc_query (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE INDEX idx_ioc_query_ioc ON ioc_query(ioc);
-CREATE INDEX idx_ioc_query_type ON ioc_query(type);
-CREATE INDEX idx_ioc_query_created_at ON ioc_query(created_at);
+CREATE INDEX IF NOT EXISTS idx_ioc_query_ioc ON ioc_query(ioc);
+CREATE INDEX IF NOT EXISTS idx_ioc_query_type ON ioc_query(type);
+CREATE INDEX IF NOT EXISTS idx_ioc_query_created_at ON ioc_query(created_at);
