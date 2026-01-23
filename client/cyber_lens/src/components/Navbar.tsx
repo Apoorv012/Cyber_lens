@@ -30,12 +30,19 @@ const Navbar = () => {
             <NavLink to="/" className={linkClass}>
               Home
             </NavLink>
+
             <NavLink to="/history" className={linkClass}>
               History
             </NavLink>
+
             <NavLink to="/news" className={linkClass}>
               News
             </NavLink>
+
+            <NavLink to="/analytics" className={linkClass}>
+              Analytics
+            </NavLink>
+
             <NavLink to="/login" className={linkClass}>
               Login
             </NavLink>
@@ -56,13 +63,10 @@ const Navbar = () => {
         {/* Mobile Menu */}
         {open && (
           <div className="md:hidden border-t border-slate-800 py-3 flex flex-col">
-            <NavLink
-              to="/"
-              onClick={() => setOpen(false)}
-              className={linkClass}
-            >
+            <NavLink to="/" onClick={() => setOpen(false)} className={linkClass}>
               Home
             </NavLink>
+
             <NavLink
               to="/history"
               onClick={() => setOpen(false)}
@@ -70,6 +74,7 @@ const Navbar = () => {
             >
               History
             </NavLink>
+
             <NavLink
               to="/news"
               onClick={() => setOpen(false)}
@@ -77,6 +82,15 @@ const Navbar = () => {
             >
               News
             </NavLink>
+
+            <NavLink
+              to="/analytics"
+              onClick={() => setOpen(false)}
+              className={linkClass}
+            >
+              Analytics
+            </NavLink>
+
             <NavLink
               to="/login"
               onClick={() => setOpen(false)}
