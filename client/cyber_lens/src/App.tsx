@@ -12,7 +12,10 @@ import News from "./pages/News";
 import Login from "../../../contributors/MK-codes365/pages/Login";
 import Signup from "../../../contributors/MK-codes365/pages/Signup";
 import VerifyEmail from "../../../contributors/MK-codes365/pages/VerifyEmail";
+import VerifyAction from "./pages/VerifyAction";
+
 import Analytics from "./pages/Analytics";
+import Settings from "./pages/Settings";
 
 const Layout = () => {
   return (
@@ -37,7 +40,10 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/verify-action" element={<VerifyAction />} />
+
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>
     </Router>

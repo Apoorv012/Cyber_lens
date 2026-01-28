@@ -39,6 +39,9 @@ const Navbar = () => {
             <NavLink to="/analytics" className={linkClass}>
               Analytics
             </NavLink>
+            <NavLink to="/settings" className={linkClass}>
+              Settings
+            </NavLink>
           </div>
 
           {/* Mobile Menu Button */}
@@ -78,11 +81,11 @@ const Navbar = () => {
               News
             </NavLink>
             <NavLink
-              to="/analytics"
+              to="/settings"
               onClick={() => setOpen(false)}
               className={linkClass}
             >
-              Analytics
+              Settings
             </NavLink>
           </div>
         )}

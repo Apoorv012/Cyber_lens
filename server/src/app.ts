@@ -3,6 +3,8 @@ import cors from "cors";
 import resolveOwner from "./utils/resolveOwner";
 import lookupRouter from "./routes/lookup";
 import historyRouter from "./routes/history";
+import authRouter from "./routes/auth";
+
 
 const app = express();
 
@@ -31,5 +33,7 @@ app.get("/", (_req, res) => {
 
 app.use("/lookup", lookupRouter);
 app.use("/history", historyRouter);
+app.use("/auth", authRouter);
+
 
 export default app;
