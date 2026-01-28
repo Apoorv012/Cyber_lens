@@ -1,8 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { httpJson } from "../utils/httpClient";
+import { useAuth } from "../hooks/useAuth";
 
 interface FormErrors {
   email?: string;
   password?: string;
+  general?: string;
 }
 
 const Login: React.FC = () => {
@@ -10,6 +14,8 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,11 +45,32 @@ const Login: React.FC = () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setErrors({});
 
-    setTimeout(() => {
+    try {
+      const response = await httpJson<{ accessToken: string }>("/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      login(email, response.accessToken);
+      navigate("/");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Login failed";
+      
+      if (message.includes("Invalid credentials") || message.includes("401")) {
+        setErrors({ general: "Invalid email or password" });
+      } else if (message.includes("Email and password are required") || message.includes("400")) {
+        setErrors({ general: "Email and password are required" });
+      } else {
+        setErrors({ general: "An error occurred. Please try again." });
+      }
+    } finally {
       setIsLoading(false);
-      console.log("Login attempt:", { email, password });
-    }, 1000);
+    }
   };
 
   return (
@@ -69,6 +96,13 @@ const Login: React.FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* General Error */}
+            {errors.general && (
+              <div className="px-4 py-3 text-sm bg-red-950/50 border border-red-800 text-red-400 rounded">
+                {errors.general}
+              </div>
+            )}
+
             {/* Email */}
             <div>
               <label className="block text-base font-medium text-neutral-300 mb-2">
