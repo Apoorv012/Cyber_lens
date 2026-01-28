@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { httpJson } from "../utils/httpClient";
+import { useAuth } from "../hooks/useAuth";
 
 type AnalyticsResponse = {
   total_lookups: number;
@@ -17,38 +19,57 @@ type AnalyticsResponse = {
   }[];
 };
 
+type ErrorState = "unauthorized" | "not-verified" | "error" | null;
+
 const Analytics: React.FC = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errorState, setErrorState] = useState<ErrorState>(null);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
-  // Check auth state from local storage.
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    if (isAuthLoading) return;
 
-    if (!token) {
-      setIsLoggedIn(false);
+    if (!user?.token || !isAuthenticated) {
       setLoading(false);
+      setErrorState("unauthorized");
       return;
     }
 
-    setIsLoggedIn(true);
+    setLoading(true);
+    setErrorState(null);
 
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/analytics/summary`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "X-Client-ID": "cyberlens-web",
-      },
-    })
-      .then(async (res) => {
-        if (!res.ok) throw new Error("API Error");
-        return res.json();
+    httpJson<AnalyticsResponse>("/analytics/summary", { auth: true })
+      .then((payload) => {
+        setData(payload);
+        setErrorState(null);
       })
-      .then(setData)
-      .catch(() => setError("Failed to load analytics"))
+      .catch((err) => {
+        const message =
+          err instanceof Error ? err.message : "Failed to load analytics";
+        const lower = message.toLowerCase();
+
+        if (lower.includes("not verified")) {
+          setErrorState("not-verified");
+          setErrorMessage(
+            "Please verify your email to access analytics. Check your inbox for the verification link.",
+          );
+        } else if (
+          lower.includes("unauthorized") ||
+          lower.includes("jwt") ||
+          lower.includes("401")
+        ) {
+          setErrorState("unauthorized");
+          setErrorMessage("Your session expired. Please sign in again.");
+          logout();
+        } else {
+          setErrorState("error");
+          setErrorMessage(message);
+        }
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAuthenticated, isAuthLoading, user?.token, logout]);
 
   if (loading) {
     return (
@@ -58,17 +79,16 @@ const Analytics: React.FC = () => {
     );
   }
 
-  if (!isLoggedIn) {
+  if (errorState === "unauthorized") {
     return (
       <div className="min-h-screen bg-neutral-950 text-neutral-100 flex items-center justify-center px-4">
         <div className="max-w-md text-center">
           <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-full bg-neutral-900 border border-neutral-800 text-cyan-500">
             <i className="fa-solid fa-lock text-2xl" />
           </div>
-          <h1 className="text-3xl font-bold mb-4">Access Restricted</h1>
-          <p className="text-neutral-400 mb-8">
-            You need to log in to view analytics. Access detailed insights and
-            threat intelligence data.
+          <h1 className="text-3xl font-bold mb-3">Access Restricted</h1>
+          <p className="text-neutral-400 mb-6">
+            {errorMessage || "You need to log in to view analytics."}
           </p>
           <Link
             to="/login"
@@ -81,17 +101,49 @@ const Analytics: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (errorState === "not-verified") {
     return (
-      <div className="min-h-screen bg-neutral-950 text-red-400 flex items-center justify-center">
-        {error}
+      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex items-center justify-center px-4">
+        <div className="max-w-lg text-center border border-neutral-800 bg-neutral-900 p-8 rounded">
+          <div className="mb-4 inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-400">
+            <i className="fa-solid fa-envelope-circle-check text-2xl" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Verify Your Email</h1>
+          <p className="text-neutral-300 mb-4">{errorMessage}</p>
+          <p className="text-sm text-neutral-400 mb-6">
+            Verification was sent to {user?.email || "your email"}. Check your inbox or spam
+            folder, then return to continue.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to={`/check-email?email=${encodeURIComponent(user?.email || "")}`}
+              className="px-6 py-2 bg-cyan-500 text-neutral-950 font-medium hover:bg-cyan-400 transition-colors rounded"
+            >
+              Go to email instructions
+            </Link>
+            <Link
+              to="/"
+              className="px-6 py-2 border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition-colors rounded"
+            >
+              Back to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (errorState === "error") {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-red-400 flex items-center justify-center px-4 text-center">
+        {errorMessage || "Failed to load analytics"}
       </div>
     );
   }
 
   if (!data || data.total_lookups === 0) {
     return (
-      <div className="min-h-screen bg-neutral-950 text-neutral-400 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 text-neutral-400 flex items-center justify-center px-4">
         No analytics data available yet.
       </div>
     );

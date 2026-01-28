@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+﻿import nodemailer from "nodemailer";
 import transporter from "../utils/emailTransport";
 
 interface SendEmailOptions {
@@ -28,7 +28,7 @@ export async function sendEmail({
 
       html: `
         <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111;">
-          <h2 style="margin-bottom: 12px;">Welcome to Cyber Lens 👋</h2>
+          <h2 style="margin-bottom: 12px;">Welcome to Cyber Lens</h2>
 
           <p>
             Please verify your email address by clicking the link below:
@@ -52,16 +52,18 @@ export async function sendEmail({
           </p>
 
           <p style="margin-top: 24px; color: #555;">
-            — Cyber Lens Team
+            - Cyber Lens Team
           </p>
         </div>
       `,
     });
 
-    //Ethereal preview URL (for testing)
+    // Ethereal/stream preview URL (for testing)
     const previewUrl = nodemailer.getTestMessageUrl(info);
     if (previewUrl) {
-      console.info("Preview URL:", previewUrl);
+      console.info("[email] Preview URL:", previewUrl);
+    } else if ((info as any).message) {
+      console.info("[email] Message (stream):\n", (info as any).message.toString());
     }
   } catch (error) {
     console.error("Error sending email:", error);

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Home from "./pages/Home";
 import History from "./pages/History";
@@ -35,7 +36,14 @@ function App() {
           <Route path="/history" element={<History />} />
           <Route path="/news" element={<News />} />
           <Route path="/news/:id" element={<NewsDetail />} />
-          <Route path="/analytics" element={<Analytics />} />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <Analytics />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         {/* -------- Auth Pages (NO Navbar / Footer) -------- */}

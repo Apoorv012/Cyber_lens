@@ -60,10 +60,21 @@ const Login: React.FC = () => {
       navigate("/");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Login failed";
-      
-      if (message.includes("Invalid credentials") || message.includes("401")) {
+      const lower = message.toLowerCase();
+
+      if (lower.includes("not verified")) {
+        setErrors({
+          general:
+            "Please verify your email to continue. We've sent a link to your inbox.",
+        });
+        navigate(`/check-email?email=${encodeURIComponent(email)}`);
+      } else if (
+        lower.includes("invalid credentials") ||
+        lower.includes("unauthorized") ||
+        lower.includes("401")
+      ) {
         setErrors({ general: "Invalid email or password" });
-      } else if (message.includes("Email and password are required") || message.includes("400")) {
+      } else if (lower.includes("email and password are required") || lower.includes("400")) {
         setErrors({ general: "Email and password are required" });
       } else {
         setErrors({ general: "An error occurred. Please try again." });
@@ -142,7 +153,7 @@ const Login: React.FC = () => {
                 className={`w-full px-4 py-3 text-base bg-neutral-950 border ${
                   errors.password ? "border-red-500" : "border-neutral-800"
                 } placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors`}
-                placeholder="••••••••"
+                placeholder="********"
                 disabled={isLoading}
               />
               {errors.password && (
