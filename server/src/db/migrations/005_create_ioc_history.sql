@@ -1,4 +1,4 @@
-CREATE TABLE ioc_history (
+CREATE TABLE IF NOT EXISTS ioc_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   owner_type TEXT NOT NULL,

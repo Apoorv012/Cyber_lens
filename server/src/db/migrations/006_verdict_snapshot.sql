@@ -1,7 +1,7 @@
 -- adding verdict, score to ioc_history
 
 ALTER TABLE ioc_history
-ADD COLUMN verdict TEXT;
+ADD COLUMN IF NOT EXISTS verdict TEXT;
 
 ALTER TABLE ioc_history
-ADD COLUMN score INT;
+ADD COLUMN IF NOT EXISTS score INT;

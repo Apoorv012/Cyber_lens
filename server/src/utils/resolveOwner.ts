@@ -27,6 +27,11 @@ async function resolveOwner(
     return next();
   }
 
+  // Allow public verification link without client context
+  if (req.path.startsWith("/auth/verify-email")) {
+    return next();
+  }
+
   const clientId = req.header("X-Client-ID");
 
   if (!clientId || !UUID_V4_REGEX.test(clientId)) {
