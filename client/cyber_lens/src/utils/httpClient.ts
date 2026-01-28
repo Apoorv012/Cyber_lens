@@ -6,22 +6,47 @@ type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export interface HttpRequestOptions extends RequestInit {
   method?: HttpMethod;
+  /**
+   * When true, attaches the stored JWT as an Authorization header.
+   */
+  auth?: boolean;
 }
 
-function buildHeaders(clientId: string, headers?: HeadersInit): Headers {
-  const merged = new Headers(headers ?? {});
+function getStoredAccessToken(): string | null {
+  try {
+    return localStorage.getItem("accessToken");
+  } catch (_error) {
+    return null;
+  }
+}
+
+function buildHeaders(
+  clientId: string,
+  options: HttpRequestOptions,
+): Headers {
+  const merged = new Headers(options.headers ?? {});
   merged.set("X-Client-ID", clientId);
+
+  if (options.auth) {
+    const token = getStoredAccessToken();
+    if (token) {
+      merged.set("Authorization", `Bearer ${token}`);
+    }
+  }
+
   return merged;
 }
 
 export async function httpRequest(
   path: string,
-  options: HttpRequestOptions = {}
+  options: HttpRequestOptions = {},
 ): Promise<Response> {
   const clientId = getOrCreateAnonymousClientId();
-  const headers = buildHeaders(clientId, options.headers);
+  const headers = buildHeaders(clientId, options);
+  const { auth: _auth, ...rest } = options;
+
   const requestInit: RequestInit = {
-    ...options,
+    ...rest,
     headers,
   };
 

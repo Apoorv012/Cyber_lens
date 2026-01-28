@@ -1,9 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { httpJson } from "../utils/httpClient";
 
 interface FormErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
+  general?: string;
 }
 
 const Signup: React.FC = () => {
@@ -12,6 +15,7 @@ const Signup: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -43,20 +47,44 @@ const Signup: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setErrors({});
 
-    setTimeout(() => {
+    try {
+      await httpJson("/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      navigate(`/check-email?email=${encodeURIComponent(email)}`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Signup failed. Please try again.";
+      const lower = message.toLowerCase();
+
+      if (lower.includes("already registered")) {
+        setErrors({ email: "This email is already registered." });
+      } else if (
+        lower.includes("invalid email format") ||
+        lower.includes("email and password are required")
+      ) {
+        setErrors({ general: "Please provide a valid email and password." });
+      } else if (lower.includes("password must")) {
+        setErrors({ password: message });
+      } else {
+        setErrors({ general: message });
+      }
+    } finally {
       setIsLoading(false);
-      console.log("Signup attempt:", { email, password });
-
-      // Redirect to verify email
-      window.location.href = `/check-email?email=${encodeURIComponent(email)}`;
-    }, 1000);
+    }
   };
 
   return (
@@ -81,6 +109,13 @@ const Signup: React.FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6 py-2">
+            {/* General Error */}
+            {errors.general && (
+              <div className="px-4 py-3 text-sm bg-red-950/50 border border-red-800 text-red-400 rounded">
+                {errors.general}
+              </div>
+            )}
+
             {/* Email */}
             <div>
               <label className="block text-base font-medium text-neutral-300 mb-2">
@@ -120,7 +155,7 @@ const Signup: React.FC = () => {
                 className={`w-full px-4 py-3 text-base bg-neutral-950 border ${
                   errors.password ? "border-red-500" : "border-neutral-800"
                 } placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-cyan-500`}
-                placeholder="••••••••"
+                placeholder="********"
                 disabled={isLoading}
               />
               {errors.password && (
@@ -146,7 +181,7 @@ const Signup: React.FC = () => {
                     ? "border-red-500"
                     : "border-neutral-800"
                 } placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-cyan-500`}
-                placeholder="••••••••"
+                placeholder="********"
                 disabled={isLoading}
               />
               {errors.confirmPassword && (
