@@ -13,7 +13,13 @@ export async function authResendVerificationController(
   }
 
   try {
-    await authResendVerificationService(email);
+    const result = await authResendVerificationService(email);
+
+    if (result?.status === "already_verified") {
+      res.status(200).json({ status: "already_verified" });
+      return;
+    }
+
     res.status(200).json({ status: "ok" });
   } catch (error) {
     console.error("Resend verification error:", error);

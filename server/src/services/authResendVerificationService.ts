@@ -2,7 +2,9 @@ import pool from "../db";
 import { generateEmailVerificationToken } from "./emailVerificationToken";
 import { sendEmail } from "./emailService";
 
-export async function authResendVerificationService(email: string): Promise<void> {
+export async function authResendVerificationService(
+  email: string,
+): Promise<{ status: "already_verified" } | null> {
   const client = await pool.connect();
 
   try {
@@ -16,7 +18,7 @@ export async function authResendVerificationService(email: string): Promise<void
       [email],
     );
 
-    if (!result.rowCount) return;
+    if (!result.rowCount) return null;
 
     const user = result.rows[0] as {
       id: string;
@@ -24,23 +26,19 @@ export async function authResendVerificationService(email: string): Promise<void
       last_verification_sent_at: Date | null;
     };
 
-    if (user.email_verified) return;
-
-    const now = new Date();
+    if (user.email_verified) {
+      return { status: "already_verified" };
+    }
 
     if (
       user.last_verification_sent_at &&
-      now.getTime() - new Date(user.last_verification_sent_at).getTime() < 60_000
+      Date.now() - new Date(user.last_verification_sent_at).getTime() < 60_000
     ) {
-      return;
+      return null;
     }
 
     await client.query(
-      `
-      UPDATE users
-      SET last_verification_sent_at = NOW()
-      WHERE id = $1
-      `,
+      `UPDATE users SET last_verification_sent_at = NOW() WHERE id = $1`,
       [user.id],
     );
 
@@ -50,8 +48,6 @@ export async function authResendVerificationService(email: string): Promise<void
     });
 
     const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, "");
-    if (!frontendUrl) throw new Error("FRONTEND_URL not configured");
-
     const verificationLink = `${frontendUrl}/verify-email?token=${encodeURIComponent(
       token,
     )}`;
@@ -62,7 +58,11 @@ export async function authResendVerificationService(email: string): Promise<void
       verificationLink,
     });
 
-    console.info(`[email-verification] Resent magic link for ${email}: ${verificationLink}`);
+    console.info(
+      `[email-verification] Resent magic link for ${email}: ${verificationLink}`,
+    );
+
+    return null;
   } finally {
     client.release();
   }
