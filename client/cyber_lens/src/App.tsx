@@ -1,4 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Outlet,
+} from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -10,6 +15,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import SentEmail from "./pages/SentEmailConfirmation";
 import VerifyEmail from "./pages/VerifyEmail";
+import RequestPasswordReset from "./pages/RequestPasswordReset";
+import ResetPassword from "./pages/ResetPassword";
 import Analytics from "./pages/Analytics";
 import NewsDetail from "./pages/NewsDetail";
 
@@ -43,7 +50,8 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/check-email" element={<SentEmail />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-
+        <Route path="/forgot-password" element={<RequestPasswordReset />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </Router>
   );
