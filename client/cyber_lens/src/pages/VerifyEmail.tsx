@@ -54,6 +54,11 @@ const VerifyEmail: React.FC = () => {
           )}
           {status === "success" && (
             <div className="my-8">
+              <img
+                src="https://cdn.pixabay.com/photo/2022/07/04/01/58/hook-7300191_1280.png"
+                alt="Success"
+                className="mx-auto mb-4 w-16 h-16"
+              />
               <p className="text-green-400 text-lg font-semibold mb-2">
                 {message}
               </p>
@@ -70,6 +75,11 @@ const VerifyEmail: React.FC = () => {
           )}
           {status === "error" && (
             <div className="my-8">
+              <img
+                src="https://img.freepik.com/premium-vector/red-cross-icon-white-x-symbol-red-circle-error-cancel-sign_797523-4248.jpg?semt=ais_hybrid&w=740&q=80"
+                alt="Error"
+                className="mx-auto mb-4 w-16 h-16"
+              />
               <p className="text-red-400 text-lg font-semibold mb-2">
                 {message}
               </p>

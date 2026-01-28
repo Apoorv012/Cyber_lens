@@ -74,7 +74,10 @@ const Login: React.FC = () => {
         lower.includes("401")
       ) {
         setErrors({ general: "Invalid email or password" });
-      } else if (lower.includes("email and password are required") || lower.includes("400")) {
+      } else if (
+        lower.includes("email and password are required") ||
+        lower.includes("400")
+      ) {
         setErrors({ general: "Email and password are required" });
       } else {
         setErrors({ general: "An error occurred. Please try again." });
@@ -161,6 +164,15 @@ const Login: React.FC = () => {
               )}
             </div>
 
+            {/* Forgot Password Link */}
+            <div className="flex justify-end mb-2">
+              <a
+                href="/forgot-password"
+                className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+              >
+                Forgot password?
+              </a>
+            </div>
             {/* Submit */}
             <button
               type="submit"
