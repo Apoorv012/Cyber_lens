@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../hooks/useAuth";
 import Avatar from "./Avatar";
 
-
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -14,20 +13,18 @@ const Navbar = () => {
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleLogout = () => {
-  if (isSigningOut) return;
+    if (isSigningOut) return;
 
-  setIsSigningOut(true);
+    setIsSigningOut(true);
 
-  setTimeout(() => {
-    logout();
-    setProfileDropdownOpen(false);
-    setOpen(false);
-    navigate("/");
-    setIsSigningOut(false);
-  }, 800);
-};
-
-
+    setTimeout(() => {
+      logout();
+      setProfileDropdownOpen(false);
+      setOpen(false);
+      navigate("/");
+      setIsSigningOut(false);
+    }, 800);
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -133,10 +130,14 @@ const Navbar = () => {
                         <i className="fa-solid fa-user text-slate-400" />
                         <span>Profile</span>
                       </button>
-                      <button className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-3">
+                      <NavLink
+                        to="/settings"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-3"
+                      >
                         <i className="fa-solid fa-gear text-slate-400" />
                         <span>Settings</span>
-                      </button>
+                      </NavLink>
                     </div>
 
                     {/* Logout */}
@@ -154,7 +155,6 @@ const Navbar = () => {
                         <i className="fa-solid fa-right-from-bracket text-orange-400" />
                         <span>{isSigningOut ? "Signing out…" : "Logout"}</span>
                       </button>
-
                     </div>
                   </div>
                 )}
@@ -181,7 +181,11 @@ const Navbar = () => {
         {/* Mobile Menu */}
         {open && (
           <div className="md:hidden border-t border-slate-800 py-3 flex flex-col">
-            <NavLink to="/" onClick={() => setOpen(false)} className={linkClass}>
+            <NavLink
+              to="/"
+              onClick={() => setOpen(false)}
+              className={linkClass}
+            >
               Home
             </NavLink>
 
@@ -202,11 +206,11 @@ const Navbar = () => {
             </NavLink>
 
             <NavLink
-              to="/analytics"
+              to="/settings"
               onClick={() => setOpen(false)}
               className={linkClass}
             >
-              Analytics
+              Settings
             </NavLink>
 
             {isAuthenticated && user ? (
@@ -223,19 +227,19 @@ const Navbar = () => {
                       </p>
                     </div>
                   </div>
-                    <button
-                      onClick={handleLogout}
-                      disabled={isSigningOut}
-                      className={`w-full px-4 py-2 text-left text-sm rounded transition-colors flex items-center gap-3
+                  <button
+                    onClick={handleLogout}
+                    disabled={isSigningOut}
+                    className={`w-full px-4 py-2 text-left text-sm rounded transition-colors flex items-center gap-3
                         ${
                           isSigningOut
                             ? "text-slate-500 cursor-not-allowed"
                             : "text-slate-300 hover:bg-slate-800"
                         }`}
-                    >
-                      <i className="fa-solid fa-right-from-bracket text-orange-400" />
-                      <span>{isSigningOut ? "Signing out…" : "Logout"}</span>
-                    </button>
+                  >
+                    <i className="fa-solid fa-right-from-bracket text-orange-400" />
+                    <span>{isSigningOut ? "Signing out…" : "Logout"}</span>
+                  </button>
                 </div>
               </>
             ) : (
