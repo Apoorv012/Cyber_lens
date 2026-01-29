@@ -10,6 +10,7 @@ import resolveRuntimeOwner from "./middleware/resolveRuntimeOwner";
 import newsRouter from "./routes/news";
 import lookupRouter from "./routes/lookup";
 import historyRouter from "./routes/history";
+import authRouter from "./routes/auth";
 import analyticsRouter from "./routes/analytics";
 import router from "./routes";
 import { runNewsScraper } from "./services/newsScraper";
@@ -37,31 +38,16 @@ app.use(resolveOwner);
 app.use(authenticateUserOptional);
 app.use(resolveRuntimeOwner);
 
-// TEMPORARY MIDDLEWARE TO PRINT THE OWNER TYPE
-// app.use((req, _res, next) => {
-//   const owner = req.owner;
-
-//   if (owner?.type === "user") {
-//     console.info(`[owner] user ${owner.id}`);
-//   } else if (owner?.type === "anonymous") {
-//     console.info(`[owner] anonymous ${owner.id}`);
-//   } else {
-//     console.info("[owner] unresolved");
-//   }
-
-//   next();
-// });
-
 app.get("/", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/", router);
-app.use("/lookup", lookupRouter);
-app.use("/history", historyRouter);
 // Protected routes: require a valid JWT
 app.use("/analytics", authenticateUser, requireVerifiedEmail, analyticsRouter);
 app.use("/", router);
 app.use("/news", newsRouter);
+app.use("/lookup", lookupRouter);
+app.use("/history", historyRouter);
+app.use("/auth", authRouter);
 
 export default app;
