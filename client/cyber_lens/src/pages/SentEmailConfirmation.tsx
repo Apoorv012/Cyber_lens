@@ -1,19 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import { httpJson } from "../utils/httpClient";
+
+const COOLDOWN_SECONDS = 60;
 
 const SentEmail: React.FC = () => {
   const [isResending, setIsResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [message, setMessage] = useState<string>("");
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Read email from query params (Vite-safe)
   const params = new URLSearchParams(window.location.search);
   const email = params.get("email") || "user@example.com";
 
-  const handleResendEmail = () => {
+  const handleResendEmail = async () => {
     setIsResending(true);
-
-    setTimeout(() => {
+    setMessage("");
+    try {
+      await httpJson<{ status: string }>("/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      setCooldown(COOLDOWN_SECONDS);
+      timerRef.current = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            if (timerRef.current) clearInterval(timerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      setMessage("Verification email resent. Please check your inbox.");
+    } catch (err: any) {
+      setMessage(err?.message || "Failed to resend verification email.");
+    } finally {
       setIsResending(false);
-      console.log("Resend verification email to:", email);
-    }, 1000);
+    }
   };
 
   return (
@@ -105,11 +129,20 @@ const SentEmail: React.FC = () => {
           {/* Resend */}
           <button
             onClick={handleResendEmail}
-            disabled={isResending}
+            disabled={isResending || cooldown > 0}
             className="w-full px-4 py-3 text-base font-medium bg-cyan-500 text-neutral-950 hover:bg-cyan-400 disabled:bg-neutral-700 disabled:text-neutral-500 transition-colors"
           >
-            {isResending ? "Sending..." : "Resend verification email"}
+            {isResending
+              ? "Sending..."
+              : cooldown > 0
+                ? `Resend in ${cooldown}s`
+                : "Resend verification email"}
           </button>
+          {message && (
+            <div className="mt-3 text-center text-cyan-400 text-sm">
+              {message}
+            </div>
+          )}
 
           {/* Help */}
           <div className="mt-6 text-center">

@@ -12,7 +12,8 @@
     "ts-node": "^10.9.2"
   },
   "scripts": {
-    "dev": "npx nodemon --exec npx ts-node ./src/server.ts"
+    "dev": "npx nodemon --exec npx ts-node ./src/server.ts",
+    "migrate": "npx ts-node ./src/db/migrate.ts"
   },
   "peerDependencies": {
     "typescript": "^5"
