@@ -1,31 +1,40 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { httpJson } from "../utils/httpClient";
+import { useAuth } from "../hooks/useAuth";
+
+const processedTokens = new Map<string, string>();
 
 const VerifyAction: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [status, setStatus] = useState<"verifying" | "success" | "error">(
     "verifying",
   );
   const [message, setMessage] = useState("Verifying your security token...");
-  const [verificationAttempted, setVerificationAttempted] = useState(false);
 
   useEffect(() => {
-    // Prevent multiple verification attempts
-    if (verificationAttempted) {
-      return;
-    }
-
     const token = searchParams.get("token");
     const type = searchParams.get("type");
 
     if (!token || !type) {
       setStatus("error");
       setMessage("Invalid security link or missing verification data.");
-      setVerificationAttempted(true);
       return;
     }
+
+    const cacheKey = `${type}:${token}`;
+
+    if (processedTokens.has(cacheKey)) {
+      const cachedMessage = processedTokens.get(cacheKey) as string;
+      setStatus("success");
+      setMessage(cachedMessage);
+      setTimeout(() => navigate("/"), 3000);
+      return;
+    }
+
+    let cancelled = false;
 
     const performVerification = async () => {
       try {
@@ -35,18 +44,19 @@ const VerifyAction: React.FC = () => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token }),
           });
+
+          if (cancelled) return;
+
+          const successMessage =
+            "Account deleted successfully. Logging you out now.";
+
+          processedTokens.set(cacheKey, successMessage);
           setStatus("success");
-          setMessage(
-            "Your account has been successfully deleted. You are now being logged out.",
-          );
+          setMessage(successMessage);
 
-          // Clear authentication tokens from localStorage
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("userEmail");
+          // Clear authentication tokens and notify the app shell
           localStorage.removeItem("anonymous-client-id");
-
-          // Dispatch auth state change event to update navbar and other components
-          window.dispatchEvent(new Event("auth-state-changed"));
+          logout();
 
           setTimeout(() => navigate("/"), 3000);
         } else {
@@ -54,16 +64,20 @@ const VerifyAction: React.FC = () => {
           setMessage("Unrecognized verification sequence.");
         }
       } catch (err) {
+        if (cancelled) return;
         setStatus("error");
         setMessage(
           err instanceof Error ? err.message : "Security verification failed.",
         );
       }
-      setVerificationAttempted(true);
     };
 
     performVerification();
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [logout, navigate, searchParams]);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex items-center justify-center px-4">
@@ -100,7 +114,7 @@ const VerifyAction: React.FC = () => {
               </h1>
               <p className="text-neutral-400 mb-8 leading-relaxed">{message}</p>
               <p className="text-xs text-neutral-500">
-                Redirecting to home page in 5 seconds...
+                Redirecting to home page in 3 seconds...
               </p>
             </div>
           )}

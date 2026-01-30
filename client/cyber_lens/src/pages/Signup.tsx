@@ -50,6 +50,8 @@ const Signup: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isLoading) return;
+
     if (!validateForm()) return;
 
     setIsLoading(true);
