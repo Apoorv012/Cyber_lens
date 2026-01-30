@@ -2,8 +2,8 @@ import { Router, Request, Response } from "express";
 import pool from "../db";
 import {
   createMagicLink,
+  hashToken,
   sendMagicLinkEmail,
-  verifyMagicLink,
 } from "../utils/magicLink";
 import { hashPassword, verifyPassword } from "../utils/password";
 
@@ -92,38 +92,63 @@ router.post("/verify-delete", async (req: Request, res: Response) => {
     return;
   }
 
-  try {
-    const userId = await verifyMagicLink(token, "delete_account");
+  const tokenHash = hashToken(token);
+  const client = await pool.connect();
 
-    if (!userId) {
+  try {
+    await client.query("BEGIN");
+
+    const linkResult = await client.query(
+      `SELECT user_id, expires_at, used_at
+       FROM magic_links
+       WHERE token_hash = $1 AND type = $2
+       LIMIT 1`,
+      [tokenHash, "delete_account"],
+    );
+
+    if (!linkResult.rowCount) {
+      await client.query("ROLLBACK");
       res.status(400).json({ error: "The verification link is invalid or has expired" });
       return;
     }
 
-    const client = await pool.connect();
-    try {
-      await client.query("BEGIN");
+    const { user_id: userId, expires_at: expiresAt, used_at: usedAt } = linkResult.rows[0];
 
-      // Clear all historical data associated with the user
+    if (new Date(expiresAt) < new Date()) {
+      await client.query("ROLLBACK");
+      res.status(400).json({ error: "The verification link is invalid or has expired" });
+      return;
+    }
+
+    if (!usedAt) {
+      await client.query(
+        "UPDATE magic_links SET used_at = NOW() WHERE token_hash = $1",
+        [tokenHash],
+      );
+    }
+
+    const userExists = await client.query(
+      "SELECT 1 FROM users WHERE id = $1",
+      [userId],
+    );
+
+    if (userExists.rowCount) {
       await client.query(
         "DELETE FROM ioc_history WHERE owner_type = 'user' AND owner_id = $1",
-        [userId]
+        [userId],
       );
 
-      // Finalize account termination
       await client.query("DELETE FROM users WHERE id = $1", [userId]);
-
-      await client.query("COMMIT");
-      res.json({ message: "Account and associated history terminated successfully" });
-    } catch (transactionError) {
-      await client.query("ROLLBACK");
-      throw transactionError;
-    } finally {
-      client.release();
     }
+
+    await client.query("COMMIT");
+    res.json({ message: "Account and associated history terminated successfully" });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Delete verification failure:", error);
     res.status(500).json({ error: "A system error occurred during account termination" });
+  } finally {
+    client.release();
   }
 });
 

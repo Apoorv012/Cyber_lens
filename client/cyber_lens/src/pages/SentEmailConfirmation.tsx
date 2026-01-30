@@ -8,12 +8,18 @@ const SentEmail: React.FC = () => {
   const [cooldown, setCooldown] = useState(0);
   const [message, setMessage] = useState<string>("");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const resendInFlightRef = useRef(false);
 
   // Read email from query params (Vite-safe)
   const params = new URLSearchParams(window.location.search);
   const email = params.get("email") || "user@example.com";
 
   const handleResendEmail = async () => {
+    if (resendInFlightRef.current || isResending || cooldown > 0) {
+      return;
+    }
+
+    resendInFlightRef.current = true;
     setIsResending(true);
     setMessage("");
     try {
@@ -37,6 +43,7 @@ const SentEmail: React.FC = () => {
       setMessage(err?.message || "Failed to resend verification email.");
     } finally {
       setIsResending(false);
+      resendInFlightRef.current = false;
     }
   };
 

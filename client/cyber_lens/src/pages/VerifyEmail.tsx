@@ -2,6 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { httpJson } from "../utils/httpClient";
 
+type VerificationCacheEntry =
+  | { status: "success" | "already"; message: string }
+  | { status: "error" | "missing"; message: string };
+
+const processedEmailTokens = new Map<string, VerificationCacheEntry>();
+
 const VerifyEmail: React.FC = () => {
   const [status, setStatus] = useState<
     "loading" | "success" | "already" | "error" | "missing"
@@ -17,28 +23,60 @@ const VerifyEmail: React.FC = () => {
       setMessage("Verification token is missing from the URL.");
       return;
     }
+    const cached = processedEmailTokens.get(token);
+    if (cached) {
+      setStatus(
+        cached.status === "success"
+          ? "success"
+          : cached.status === "already"
+            ? "already"
+            : cached.status,
+      );
+      setMessage(cached.message);
+      if (cached.status === "success" || cached.status === "already") {
+        setTimeout(() => navigate("/login"), 2000);
+      }
+      return;
+    }
+
     setStatus("loading");
+    let cancelled = false;
     httpJson<{ status: string; message?: string }>(
       `/auth/verify-email?token=${encodeURIComponent(token)}`,
     )
       .then((res) => {
+        if (cancelled) return;
+
         if (res.status === "verified") {
           setStatus("success");
-          setMessage("Your email has been verified successfully.");
+          const msg = "Your email has been verified successfully.";
+          processedEmailTokens.set(token, { status: "success", message: msg });
+          setMessage(msg);
           setTimeout(() => navigate("/login"), 2000);
         } else if (res.status === "already_verified") {
           setStatus("already");
-          setMessage("Your email is already verified.");
+          const msg = "Your email is already verified.";
+          processedEmailTokens.set(token, { status: "already", message: msg });
+          setMessage(msg);
           setTimeout(() => navigate("/login"), 2000);
         } else {
           setStatus("error");
-          setMessage(res.message || "Invalid or expired verification token.");
+          const msg = res.message || "Invalid or expired verification token.";
+          processedEmailTokens.set(token, { status: "error", message: msg });
+          setMessage(msg);
         }
       })
       .catch((err) => {
+        if (cancelled) return;
         setStatus("error");
-        setMessage(err.message || "Invalid or expired verification token.");
+        const msg = err.message || "Invalid or expired verification token.";
+        processedEmailTokens.set(token, { status: "error", message: msg });
+        setMessage(msg);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   return (
