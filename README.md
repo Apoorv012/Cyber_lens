@@ -125,5 +125,5 @@ By the end of the event, **Cyber Lens** should support:
 
 ## Maintainers
 
-Maintained by the **Cyber Security Wing**  
+Maintained by the **Cyber Security Wing , Geekhaven**  
 For queries, check the **Issues** section or reach out to the maintainers.
